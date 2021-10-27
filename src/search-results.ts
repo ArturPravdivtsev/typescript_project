@@ -1,6 +1,6 @@
 import { renderBlock } from './lib.js'
 
-export function renderSearchStubBlock () {
+export function renderSearchStubBlock() {
   renderBlock(
     'search-results-block',
     `
@@ -12,7 +12,7 @@ export function renderSearchStubBlock () {
   )
 }
 
-export function renderEmptyOrErrorSearchBlock (reasonMessage) {
+export function renderEmptyOrErrorSearchBlock(reasonMessage) {
   renderBlock(
     'search-results-block',
     `
@@ -24,7 +24,7 @@ export function renderEmptyOrErrorSearchBlock (reasonMessage) {
   )
 }
 
-export function renderSearchResultsBlock () {
+export function renderSearchResultsBlock() {
   renderBlock(
     'search-results-block',
     `
