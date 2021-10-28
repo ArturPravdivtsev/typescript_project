@@ -1,5 +1,11 @@
 import { renderBlock, renderToast } from './lib.js'
 
+interface ISearchFormData {
+  checkInDate: string,
+  checkOutDate: string,
+  maxPrice: number
+}
+
 function join(t, a, s) {
   function format(m) {
     const f = new Intl.DateTimeFormat('en', m);
@@ -18,7 +24,7 @@ export function renderSearchFormBlock(checkInDate?: string, checkOutDate?: strin
   const nextMonthDate = new Date();
   nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
   nextMonthDate.setDate(getLastDayOfMonth(nextMonthDate.getFullYear(), nextMonthDate.getMonth()));
-  const nextMonth = join(new Date, options, '-');
+  const nextMonth = join(nextMonthDate, options, '-');
 
   if (checkInDate) {
     const dateNow = join(new Date, options, '-');
@@ -77,11 +83,19 @@ export function renderSearchFormBlock(checkInDate?: string, checkOutDate?: strin
             <input id="max-price" type="text" value="" name="price" class="max-price" />
           </div>
           <div>
-            <div><button>Найти</button></div>
+            <div><button id="searchButton">Найти</button></div>
           </div>
         </div>
       </fieldset>
     </form>
     `
   )
+}
+
+export function search(e: Event): ISearchFormData {
+  e.preventDefault();
+  const checkInDate = (window.document.getElementById('check-in-date') as HTMLInputElement).value;
+  const checkOutDate = (window.document.getElementById('check-out-date') as HTMLInputElement).value;
+  const maxPrice = +(window.document.getElementById('max-price') as HTMLInputElement).value;
+  return {checkInDate, checkOutDate, maxPrice};
 }
