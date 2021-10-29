@@ -35,5 +35,5 @@ export function getUserData(): IUser {
 }
 
 export function getFavoritesAmount(): number {
-  return JSON.parse(localStorage.getItem('favoritesAmount'));
+  return Object.keys(JSON.parse(localStorage.getItem('favoriteItems'))).length;
 }

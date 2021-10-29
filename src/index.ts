@@ -1,14 +1,15 @@
 import { renderSearchFormBlock, search } from './search-form.js'
-import { renderSearchStubBlock } from './search-results.js'
+import { renderSearchResultsBlock } from './search-results.js'
 import { renderUserBlock, getUserData, getFavoritesAmount } from './user.js'
+import { toggleFavoriteItem } from './favourites.js'
 // import { renderToast } from './lib.js'
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   const userData = getUserData();
-  const favouritesAmount = getFavoritesAmount();
-  if (userData) renderUserBlock(userData.userName, userData.avatarUrl, favouritesAmount);
+  const favoritesAmount = getFavoritesAmount();
+  if (userData) renderUserBlock(userData.userName, userData.avatarUrl, favoritesAmount);
   renderSearchFormBlock()
-  renderSearchStubBlock()
+  // renderSearchStubBlock()
   // renderToast(
   //   { text: 'Это пример уведомления. Используйте его при необходимости', type: 'success' },
   //   { name: 'Понял', handler: () => { console.log('Уведомление закрыто') } }
@@ -19,4 +20,17 @@ window.addEventListener('DOMContentLoaded', () => {
     const SearchFormData = search(e);
     console.log(SearchFormData)
   })
+
+  await renderSearchResultsBlock();
+
+  const favoriteElements = document.querySelectorAll('.favorites');
+  favoriteElements.forEach((element) => {
+    element.addEventListener('click', (e: Event) => {
+      if (e.target instanceof Element) {
+        const id = +e.target.getAttribute('data-id');
+        const resultElem = e.target.closest('.result');
+        toggleFavoriteItem(resultElem, id)
+      }
+    });
+  });
 })
