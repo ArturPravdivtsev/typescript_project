@@ -1,5 +1,5 @@
 import { renderSearchFormBlock, search } from './search-form.js'
-import { renderSearchResultsBlock } from './search-results.js'
+import { getPlaces, renderSearchResultsBlock } from './search-results.js'
 import { renderUserBlock, getUserData, getFavoritesAmount } from './user.js'
 import { toggleFavoriteItem } from './favourites.js'
 // import { renderToast } from './lib.js'
@@ -17,11 +17,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   const searchButton = window.document.getElementById('searchButton')
 
   searchButton.addEventListener('click', (e: Event) => {
-    const SearchFormData = search(e);
-    console.log(SearchFormData)
+    search(e).then((data) => renderSearchResultsBlock(data));
   })
-
-  await renderSearchResultsBlock();
+  const places = await getPlaces();
+  await renderSearchResultsBlock(places);
 
   const favoriteElements = document.querySelectorAll('.favorites');
   favoriteElements.forEach((element) => {
