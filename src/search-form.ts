@@ -1,13 +1,11 @@
 import { renderBlock, renderToast } from './lib.js'
-import { FlatRentSdk } from './flat-rent-sdk.js'
-import { getPlaces, IPlace } from './search-results.js';
+import { Place } from './place.js';
+import { SearchFilter } from './search-filter.js';
+import { SdkProvider } from './providers/sdk/sdk-provider.js';
+import { ApiProvider } from './providers/api/api-provider.js';
 
-interface Parameters {
-  city: string,
-  checkInDate: Date,
-  checkOutDate: Date,
-  priceLimit: number|null
-}
+const api = new ApiProvider()
+const sdk = new SdkProvider()
 
 function join(t, a, s) {
   function format(m) {
@@ -103,75 +101,116 @@ export function renderSearchFormBlock(checkInDate?: string, checkOutDate?: strin
   )
 }
 
-function calculateDifferenceInDays(startDate, endDate) {
-  const difference = endDate.getTime() - startDate.getTime()
-
-  return Math.floor(difference / (1000 * 60 * 60 * 24))
-}
-
-function generateDateRange(from, to) {
-  const dates = []
-  const differenceInDays = calculateDifferenceInDays(from, to)
-
-  dates.push(new Date(from.getFullYear(), from.getMonth(), from.getDate()))
-  for (let i = 1; i <= differenceInDays; i++) {
-    dates.push(new Date(from.getFullYear(), from.getMonth(), from.getDate() + i))
+export function sortByPriceAsc(one: Place, two: Place) {
+  if (one.price > two.price) {
+    return 1
+  } else if (one.price < two.price) {
+    return -1
+  } else {
+    return 0
   }
-
-  return dates
 }
 
-function areAllDatesAvailable(flat, dateRange) {
-  return dateRange.every((date) => {
-    return !flat.bookedDates.includes(date.getTime())
-  })
-}
-
-async function findPlaces(parameters: Parameters):Promise<IPlace[]> {
-  let places = await getPlaces();
-
-  if (parameters.priceLimit != null) {
-    places = places.filter((place) => {
-      return place.price <= parameters.priceLimit
-    })
+export function sortByPriceDesc(one: Place, two: Place) {
+  if (one.price < two.price) {
+    return 1
+  } else if (one.price > two.price) {
+    return -1
+  } else {
+    return 0
   }
-
-  const dateRange = generateDateRange(parameters.checkInDate, parameters.checkOutDate)
-  places = places.filter((place) => {
-    return areAllDatesAvailable(place, dateRange)
-  })
-
-  return places;
 }
 
-export async function search(e: Event): Promise<void | IPlace[]> {
-  e.preventDefault();
+export function sortByRemoteAsc(one: Place, two: Place) {
+  if (one.remoteness > two.remoteness) {
+    return 1
+  } else if (one.remoteness < two.remoteness) {
+    return -1
+  } else {
+    return 0
+  }
+}
+
+export function getAllPlaces() {
   const city = (window.document.getElementById('city') as HTMLInputElement).value;
   const checkInDate = new Date((window.document.getElementById('check-in-date') as HTMLInputElement).value);
   const checkOutDate = new Date((window.document.getElementById('check-out-date') as HTMLInputElement).value);
   const maxPrice = (window.document.getElementById('max-price') as HTMLInputElement).value;
-  const api = (window.document.getElementById('api') as HTMLInputElement).checked;
-  const sdk = (window.document.getElementById('sdk') as HTMLInputElement).checked;
   const priceLimit = maxPrice !== '' ? +maxPrice : null;
-  if (!(api || sdk)) {
+
+  const filter: SearchFilter = {
+    checkInDate,
+    checkOutDate,
+    priceLimit,
+    city
+  }
+
+
+  return Promise.all([
+    api.find(filter),
+    sdk.find(filter)
+  ]).then((results) => {
+    // мерджим все результаты в один
+    const allResults: Place[] = [].concat(results[0], results[1])
+    return allResults.sort(sortByPriceAsc);
+    // allResults.sort(sortByPrice)
+  })
+}
+
+
+export async function search(evt: Event): Promise<void | Place[]> {
+  evt.preventDefault();
+  const city = (window.document.getElementById('city') as HTMLInputElement).value;
+  const checkInDate = new Date((window.document.getElementById('check-in-date') as HTMLInputElement).value);
+  const checkOutDate = new Date((window.document.getElementById('check-out-date') as HTMLInputElement).value);
+  const maxPrice = (window.document.getElementById('max-price') as HTMLInputElement).value;
+  const isApi = (window.document.getElementById('api') as HTMLInputElement).checked;
+  const isSdk = (window.document.getElementById('sdk') as HTMLInputElement).checked;
+  const priceLimit = maxPrice !== '' ? +maxPrice : null;
+  if (!(isApi || isSdk)) {
     return renderToast(
       { text: 'Нужно выбрать один из источников поиска', type: 'error' },
       { name: 'Понял', handler: () => { console.log('Уведомление закрыто') } }
     );
   }
-  if (api && !sdk) {
-    const places = await findPlaces({ city, checkInDate, checkOutDate, priceLimit })
-    return places;
+  const filter: SearchFilter = {
+    checkInDate,
+    checkOutDate,
+    priceLimit,
+    city
   }
-  if (!api && sdk) {
-    const SDK = new FlatRentSdk();
-    const places = await SDK.search({ city, checkInDate, checkOutDate, priceLimit }) as Promise<void|IPlace[]>
-    return places;
+  if (isApi && !isSdk) {
+    // const places = await findPlaces({ city, checkInDate, checkOutDate, priceLimit })
+    // return places;
+    return Promise.all([
+      api.find(filter),
+    ]).then((results) => {
+      // мерджим все результаты в один
+      return results[0].sort(sortByPriceAsc);
+      // allResults.sort(sortByPrice)
+    })
   }
-  if(api && sdk) {
-    const places = await findPlaces({ city, checkInDate, checkOutDate, priceLimit })
-    const SDK = new FlatRentSdk();
-    const sdkPlaces = await SDK.search({ city, checkInDate, checkOutDate, priceLimit }) as IPlace[]
-    return places.concat(sdkPlaces);
+  if (!isApi && isSdk) {
+    // const SDK = new FlatRentSdk();
+    // const places = await SDK.search({ city, checkInDate, checkOutDate, priceLimit }) as Promise<void|IPlace[]>
+    // return places;
+    return Promise.all([
+      sdk.find(filter)
+    ]).then((results) => {
+      // мерджим все результаты в один
+      return results[0].sort(sortByPriceAsc);
+      // allResults.sort(sortByPrice)
+    })
+  }
+  if(isApi && isSdk) {
+    return Promise.all([
+      api.find(filter),
+      sdk.find(filter)
+    ]).then((results) => {
+      // мерджим все результаты в один
+      const allResults: Place[] = [].concat(results[0], results[1])
+      return allResults.sort(sortByPriceAsc);
+      // allResults.sort(sortByPrice)
+    })
   }
 }

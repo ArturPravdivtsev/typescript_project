@@ -1,4 +1,5 @@
 import { renderBlock } from './lib.js'
+import { sortByPriceAsc, sortByPriceDesc, sortByRemoteAsc } from './search-form.js'
 export interface IPlace {
   id: number,
   title: string,
@@ -7,18 +8,6 @@ export interface IPlace {
   remoteness: number,
   bookedDates: Array<string>|null,
   price: number
-}
-
-export async function getPlaces(): Promise<IPlace[]> {
-  const places = await fetch('http://localhost:3000/places')
-    .then((res) => {
-      if(res.ok) return res.json()
-      return null;
-    })
-    .then((data) => {
-      return data;
-    });
-  return places;
 }
 
 export function renderSearchStubBlock() {
@@ -46,10 +35,10 @@ export function renderEmptyOrErrorSearchBlock(reasonMessage) {
 }
 
 export async function renderSearchResultsBlock(places) {
+  localStorage.setItem('places', JSON.stringify(places))
   if(!places) return renderEmptyOrErrorSearchBlock('not found');
   let searchResult = '';
   const favorites = JSON.parse(localStorage.getItem('favoriteItems'));
-  console.log(favorites)
   for(const id in places) {
     const place = places[id];
     searchResult += `
@@ -61,11 +50,11 @@ export async function renderSearchResultsBlock(places) {
           </div>
           <div class="result-info">
             <div class="result-info--header">
-              <p class="name">${place.title}</p>
+              <p class="name">${place.name}</p>
               <p class="price">${place.price} &#8381;</p>
             </div>
-            <div class="result-info--map"><i class="map-icon"></i> ${place.remoteness}км от вас</div>
-            <div class="result-info--descr">${place.details}</div>
+            <div class="result-info--map"><i class="map-icon"></i> ${place.remoteness ? place.remoteness : '?'}км от вас</div>
+            <div class="result-info--descr">${place.description}</div>
             <div class="result-info--footer">
               <div>
                 <button>Забронировать</button>
@@ -83,10 +72,10 @@ export async function renderSearchResultsBlock(places) {
         <p>Результаты поиска</p>
         <div class="search-results-filter">
             <span><i class="icon icon-filter"></i> Сортировать:</span>
-            <select>
-                <option selected="">Сначала дешёвые</option>
-                <option selected="">Сначала дорогие</option>
-                <option>Сначала ближе</option>
+            <select id="sortSelect">
+                <option name="asc" value="asc">Сначала дешёвые</option>
+                <option name="desc" value="desc">Сначала дорогие</option>
+                <option name="remote" value="remote">Сначала ближе</option>
             </select>
         </div>
     </div>
@@ -95,4 +84,19 @@ export async function renderSearchResultsBlock(places) {
     </ul>
     `
   )
+
+  const sortSelect = window.document.getElementById('sortSelect')
+  sortSelect.addEventListener('change', (evt: Event) => {
+    const data = JSON.parse(localStorage.getItem('places'));
+    if (evt.target.value === 'asc') {
+      data.sort(sortByPriceAsc);
+    }
+    if (evt.target.value === 'desc') {
+      data.sort(sortByPriceDesc);
+    }
+    if (evt.target.value === 'remote') {
+      data.sort(sortByRemoteAsc);
+    }
+    renderSearchResultsBlock(data);
+  })
 }
