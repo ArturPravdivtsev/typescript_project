@@ -1,10 +1,9 @@
 import { renderBlock } from './lib.js'
-
-interface IPlace {
+export interface IPlace {
   id: number,
-  name: string,
-  description: string,
-  image: string,
+  title: string,
+  details: string,
+  photos: string,
   remoteness: number,
   bookedDates: Array<string>|null,
   price: number
@@ -46,8 +45,7 @@ export function renderEmptyOrErrorSearchBlock(reasonMessage) {
   )
 }
 
-export async function renderSearchResultsBlock() {
-  const places = await getPlaces();
+export async function renderSearchResultsBlock(places) {
   if(!places) return renderEmptyOrErrorSearchBlock('not found');
   let searchResult = '';
   const favorites = JSON.parse(localStorage.getItem('favoriteItems'));
@@ -59,15 +57,15 @@ export async function renderSearchResultsBlock() {
         <div class="result-container">
           <div class="result-img-container">
             <div class="favorites ${favorites[id] ? 'active' : ''}" data-id="${place.id}"></div>
-            <img class="result-img" src="${place.image}" alt="">
+            <img class="result-img" src="${place.photos}" alt="">
           </div>
           <div class="result-info">
             <div class="result-info--header">
-              <p class="name">${place.name}</p>
-              <p class="price">${place.price}&#8381;</p>
+              <p class="name">${place.title}</p>
+              <p class="price">${place.price} &#8381;</p>
             </div>
             <div class="result-info--map"><i class="map-icon"></i> ${place.remoteness}км от вас</div>
-            <div class="result-info--descr">${place.description}</div>
+            <div class="result-info--descr">${place.details}</div>
             <div class="result-info--footer">
               <div>
                 <button>Забронировать</button>

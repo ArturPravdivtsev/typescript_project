@@ -1,9 +1,12 @@
 import { renderBlock, renderToast } from './lib.js'
+import { FlatRentSdk } from './flat-rent-sdk.js'
+import { getPlaces, IPlace } from './search-results.js';
 
-interface ISearchFormData {
-  checkInDate: string,
-  checkOutDate: string,
-  maxPrice: number
+interface Parameters {
+  city: string,
+  checkInDate: Date,
+  checkOutDate: Date,
+  priceLimit: number|null
 }
 
 function join(t, a, s) {
@@ -83,6 +86,14 @@ export function renderSearchFormBlock(checkInDate?: string, checkOutDate?: strin
             <input id="max-price" type="text" value="" name="price" class="max-price" />
           </div>
           <div>
+            <label for="api">Использовать API для поиска</label>
+            <input id="api" type="checkbox" value="" name="api" checked />
+          </div>
+          <div>
+            <label for="sdk">Использовать SDK для поиска</label>
+            <input id="sdk" type="checkbox" value="" name="sdk" />
+          </div>
+          <div>
             <div><button id="searchButton">Найти</button></div>
           </div>
         </div>
@@ -92,10 +103,75 @@ export function renderSearchFormBlock(checkInDate?: string, checkOutDate?: strin
   )
 }
 
-export function search(e: Event): ISearchFormData {
+function calculateDifferenceInDays(startDate, endDate) {
+  const difference = endDate.getTime() - startDate.getTime()
+
+  return Math.floor(difference / (1000 * 60 * 60 * 24))
+}
+
+function generateDateRange(from, to) {
+  const dates = []
+  const differenceInDays = calculateDifferenceInDays(from, to)
+
+  dates.push(new Date(from.getFullYear(), from.getMonth(), from.getDate()))
+  for (let i = 1; i <= differenceInDays; i++) {
+    dates.push(new Date(from.getFullYear(), from.getMonth(), from.getDate() + i))
+  }
+
+  return dates
+}
+
+function areAllDatesAvailable(flat, dateRange) {
+  return dateRange.every((date) => {
+    return !flat.bookedDates.includes(date.getTime())
+  })
+}
+
+async function findPlaces(parameters: Parameters):Promise<IPlace[]> {
+  let places = await getPlaces();
+
+  if (parameters.priceLimit != null) {
+    places = places.filter((place) => {
+      return place.price <= parameters.priceLimit
+    })
+  }
+
+  const dateRange = generateDateRange(parameters.checkInDate, parameters.checkOutDate)
+  places = places.filter((place) => {
+    return areAllDatesAvailable(place, dateRange)
+  })
+
+  return places;
+}
+
+export async function search(e: Event): Promise<void | IPlace[]> {
   e.preventDefault();
-  const checkInDate = (window.document.getElementById('check-in-date') as HTMLInputElement).value;
-  const checkOutDate = (window.document.getElementById('check-out-date') as HTMLInputElement).value;
-  const maxPrice = +(window.document.getElementById('max-price') as HTMLInputElement).value;
-  return {checkInDate, checkOutDate, maxPrice};
+  const city = (window.document.getElementById('city') as HTMLInputElement).value;
+  const checkInDate = new Date((window.document.getElementById('check-in-date') as HTMLInputElement).value);
+  const checkOutDate = new Date((window.document.getElementById('check-out-date') as HTMLInputElement).value);
+  const maxPrice = (window.document.getElementById('max-price') as HTMLInputElement).value;
+  const api = (window.document.getElementById('api') as HTMLInputElement).checked;
+  const sdk = (window.document.getElementById('sdk') as HTMLInputElement).checked;
+  const priceLimit = maxPrice !== '' ? +maxPrice : null;
+  if (!(api || sdk)) {
+    return renderToast(
+      { text: 'Нужно выбрать один из источников поиска', type: 'error' },
+      { name: 'Понял', handler: () => { console.log('Уведомление закрыто') } }
+    );
+  }
+  if (api && !sdk) {
+    const places = await findPlaces({ city, checkInDate, checkOutDate, priceLimit })
+    return places;
+  }
+  if (!api && sdk) {
+    const SDK = new FlatRentSdk();
+    const places = await SDK.search({ city, checkInDate, checkOutDate, priceLimit }) as Promise<void|IPlace[]>
+    return places;
+  }
+  if(api && sdk) {
+    const places = await findPlaces({ city, checkInDate, checkOutDate, priceLimit })
+    const SDK = new FlatRentSdk();
+    const sdkPlaces = await SDK.search({ city, checkInDate, checkOutDate, priceLimit }) as IPlace[]
+    return places.concat(sdkPlaces);
+  }
 }
