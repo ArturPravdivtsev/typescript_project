@@ -13,13 +13,13 @@ export class SdkProvider implements Provider {
   public find(filter: SearchFilter): Promise<Place[]> {
     return SdkProvider.SDK.search(filter)
       .then((response) => {
-        return this.convertPlaceListResponse(response)
+        return this.convertPlaceListResponse(response as PlaceListResponse)
       })
   }
 
   public getById(id: string): Promise<Place> {
     return SdkProvider.SDK.get(id)
-      .then((response) => {
+      .then((response: PlaceResponse) => {
         return this.convertPlaceResponse(response.item)
       })
   }

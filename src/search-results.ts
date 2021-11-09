@@ -1,5 +1,6 @@
 import { renderBlock } from './lib.js'
 import { sortByPriceAsc, sortByPriceDesc, sortByRemoteAsc } from './search-form.js'
+import { Place } from './place.js';
 export interface IPlace {
   id: number,
   title: string,
@@ -22,7 +23,7 @@ export function renderSearchStubBlock() {
   )
 }
 
-export function renderEmptyOrErrorSearchBlock(reasonMessage) {
+export function renderEmptyOrErrorSearchBlock(reasonMessage: string) {
   renderBlock(
     'search-results-block',
     `
@@ -34,11 +35,11 @@ export function renderEmptyOrErrorSearchBlock(reasonMessage) {
   )
 }
 
-export async function renderSearchResultsBlock(places) {
+export async function renderSearchResultsBlock(places: Place[]) {
   localStorage.setItem('places', JSON.stringify(places))
   if(!places) return renderEmptyOrErrorSearchBlock('not found');
   let searchResult = '';
-  const favorites = JSON.parse(localStorage.getItem('favoriteItems'));
+  const favorites = JSON.parse(localStorage.getItem('favoriteItems') || '{}');
   for(const id in places) {
     const place = places[id];
     searchResult += `
@@ -86,15 +87,17 @@ export async function renderSearchResultsBlock(places) {
   )
 
   const sortSelect = window.document.getElementById('sortSelect')
-  sortSelect.addEventListener('change', (evt: Event) => {
-    const data = JSON.parse(localStorage.getItem('places'));
-    if (evt.target.value === 'asc') {
+  sortSelect?.addEventListener('change', (evt: Event) => {
+    const data = JSON.parse(localStorage.getItem('places') || '{}');
+    const element = evt.currentTarget as HTMLInputElement
+    const value = element.value
+    if (value === 'asc') {
       data.sort(sortByPriceAsc);
     }
-    if (evt.target.value === 'desc') {
+    if (value === 'desc') {
       data.sort(sortByPriceDesc);
     }
-    if (evt.target.value === 'remote') {
+    if (value === 'remote') {
       data.sort(sortByRemoteAsc);
     }
     renderSearchResultsBlock(data);

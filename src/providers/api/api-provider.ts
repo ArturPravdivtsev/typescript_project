@@ -16,7 +16,9 @@ export class ApiProvider implements Provider {
         this.assertIsValidResponse(response)
         if (filter.priceLimit != null) {
           response.items = response.filter((place) => {
-            return place.price <= filter.priceLimit;
+            if(filter.priceLimit) {
+              return place.price <= filter.priceLimit;
+            }
           });
         }
         return this.convertPlaceListResponse(response)

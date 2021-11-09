@@ -5,7 +5,11 @@
         "module": "es2015",
         "moduleResolution": "node",
         "allowSyntheticDefaultImports": true,
-        "allowJs": true
+        "allowJs": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "strictPropertyInitialization": true
     },
     "files": [
         "src/index.ts"

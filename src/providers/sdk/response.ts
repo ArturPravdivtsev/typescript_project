@@ -13,7 +13,7 @@ export interface Place {
   title: string
   details: string
   photos: string[]
-  coordinates: number[]
+  coordinates: number[]|null
   bookedDates: []
   totalPrice: number
 }
