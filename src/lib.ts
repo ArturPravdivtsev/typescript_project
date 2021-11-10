@@ -1,9 +1,23 @@
-export function renderBlock(elementId, html) {
-  const element = document.getElementById(elementId)
-  element.innerHTML = html
+interface Toast {
+  message: {
+    text: string
+    type: string
+  } | null
+  action: {
+    name: string
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    handler: Function
+  } | null
 }
 
-export function renderToast(message, action) {
+export function renderBlock(elementId: string, html: string) {
+  const element = document.getElementById(elementId)
+  if (element) {
+    element.innerHTML = html
+  }
+}
+
+export function renderToast(message: Toast['message'], action: Toast['action']) {
   let messageText = ''
 
   if (message != null) {

@@ -25,15 +25,15 @@ export function renderUserBlock(userName: string, avatarLink: string, favoriteIt
   )
 }
 
-export function getUserData(): IUser {
+export function getUserData(): IUser|null {
   const userData = localStorage.getItem('user');
   try {
-    return JSON.parse(userData);
+    return JSON.parse(userData || '{}');
   } catch (err) {
     return null;
   }
 }
 
 export function getFavoritesAmount(): number {
-  return Object.keys(JSON.parse(localStorage.getItem('favoriteItems'))).length;
+  return Object.keys(JSON.parse(localStorage.getItem('favoriteItems') || '{}')).length;
 }

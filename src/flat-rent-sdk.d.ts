@@ -16,9 +16,8 @@ declare module 'flat-rent-sdk' {
     priceLimit: number
   }
 
-  export function get(id: string): Promise<Flat|null>
-
-  export function search(paraments: Parameters): Promise<Flat[]>
-
-  export function _formatFlatObject(flat: string, nightNumber?: number)
+  export class SdkProvider {
+    get(id: string): Promise<Flat|null>
+    search(paraments: Parameters): Promise<Flat[]>
+  }
 }

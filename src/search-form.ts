@@ -7,12 +7,12 @@ import { ApiProvider } from './providers/api/api-provider.js';
 const api = new ApiProvider()
 const sdk = new SdkProvider()
 
-function join(t, a, s) {
-  function format(m) {
+function join(t: Date, a: Intl.DateTimeFormatOptions[] | undefined, s: string) {
+  function format(m: Intl.DateTimeFormatOptions | undefined) {
     const f = new Intl.DateTimeFormat('en', m);
     return f.format(t);
   }
-  return a.map(format).join(s);
+  return a?.map(format).join(s);
 }
 
 function getLastDayOfMonth(year: number, month: number) {
@@ -21,15 +21,15 @@ function getLastDayOfMonth(year: number, month: number) {
 }
 
 export function renderSearchFormBlock(checkInDate?: string, checkOutDate?: string) {
-  const options = [{ year: 'numeric' }, { month: 'numeric' }, { day: 'numeric' }];
+  const options = [{ year: 'numeric' }, { month: 'numeric' }, { day: '2-digit' }];
   const nextMonthDate = new Date();
   nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
   nextMonthDate.setDate(getLastDayOfMonth(nextMonthDate.getFullYear(), nextMonthDate.getMonth()));
-  const nextMonth = join(nextMonthDate, options, '-');
+  const nextMonth = join(nextMonthDate, options as Intl.DateTimeFormatOptions[], '-');
 
   if (checkInDate) {
-    const dateNow = join(new Date, options, '-');
-    if (dateNow < checkInDate) {
+    const dateNow = join(new Date, options as Intl.DateTimeFormatOptions[], '-');
+    if (dateNow && dateNow < checkInDate) {
       renderToast(
         { text: 'Дата заезда не может быть меньше текущей даты!', type: 'error' },
         { name: 'Понял', handler: () => { console.log('Уведомление закрыто') } }
@@ -38,20 +38,22 @@ export function renderSearchFormBlock(checkInDate?: string, checkOutDate?: strin
   } else {
     const dateNow = new Date();
     dateNow.setDate(dateNow.getDate() + 1);
-    checkInDate = join(dateNow, options, '-');
+    checkInDate = join(dateNow, options as Intl.DateTimeFormatOptions[], '-');
   }
 
   if (checkOutDate) {
-    if (checkOutDate > nextMonth) {
+    if (nextMonth && checkOutDate > nextMonth) {
       renderToast(
         { text: 'Дата заезда не может быть меньше текущей даты!', type: 'error' },
         { name: 'Понял', handler: () => { console.log('Уведомление закрыто') } }
       );
     }
   } else {
-    const date = new Date(checkInDate);
-    date.setDate(date.getDate() + 2);
-    checkOutDate = join(date, options, '-');
+    if(checkInDate) {
+      const date = new Date(checkInDate);
+      date.setDate(date.getDate() + 2);
+      checkOutDate = join(date, options as Intl.DateTimeFormatOptions[], '-');
+    }
   }
 
   renderBlock(
@@ -122,12 +124,14 @@ export function sortByPriceDesc(one: Place, two: Place) {
 }
 
 export function sortByRemoteAsc(one: Place, two: Place) {
-  if (one.remoteness > two.remoteness) {
-    return 1
-  } else if (one.remoteness < two.remoteness) {
-    return -1
-  } else {
-    return 0
+  if (one.remoteness && two.remoteness) {
+    if (one.remoteness > two.remoteness) {
+      return 1
+    } else if (one.remoteness < two.remoteness) {
+      return -1
+    } else {
+      return 0
+    }
   }
 }
 
@@ -151,7 +155,7 @@ export function getAllPlaces() {
     sdk.find(filter)
   ]).then((results) => {
     // мерджим все результаты в один
-    const allResults: Place[] = [].concat(results[0], results[1])
+    const allResults: Place[] = [].concat(results[0] as never[], results[1] as never)
     return allResults.sort(sortByPriceAsc);
     // allResults.sort(sortByPrice)
   })
@@ -208,7 +212,7 @@ export async function search(evt: Event): Promise<void | Place[]> {
       sdk.find(filter)
     ]).then((results) => {
       // мерджим все результаты в один
-      const allResults: Place[] = [].concat(results[0], results[1])
+      const allResults: Place[] = [].concat(results[0] as never, results[1] as never)
       return allResults.sort(sortByPriceAsc);
       // allResults.sort(sortByPrice)
     })
